@@ -173,7 +173,7 @@ function renderBook(){
   <div class="f"><label>Data</label><input type="date" id="f_date" min="${mn}" max="${mx}" value="${draft.date||""}"></div></div>
   <label style="display:block;font-size:13px;font-weight:500;margin:18px 0 8px">Horário</label><div id="chips" class="chips"></div></div>
   <div class="card"><h2>2. Seus dados</h2><p class="hint">Preenchemos o que sabemos. Confira antes de confirmar.</p>
-  <div class="grid"><div class="f"><label>Professor(a)</label><input id="f_name" value="${esc(draft.name??myName)}"></div><div class="f"><label>Turma</label><input id="f_turma" placeholder="Ex.: 7º B" value="${esc(draft.turma??"")}"></div><div class="f"><label>E-mail</label><input id="f_email" type="email" value="${esc(draft.email??me.email??"")}"></div></div>
+  <div class="grid"><div class="f"><label>Professor(a)</label><input id="f_name" value="${esc(draft.name??myName)}"></div><div class="f"><label>Turma</label><input id="f_turma" placeholder="Ex.: 7º B" value="${esc(draft.turma??"")}"></div><div class="f"><label>E-mail</label><input id="f_email" type="email" value="${esc(me.email??"")}" readonly></div></div>
   <div style="margin-top:18px"><button class="btn pri" id="f_go">Confirmar agendamento</button></div></div>`;
   el.dataset.ready=1;["f_lab","f_seg","f_date"].forEach(i=>$("#"+i).onchange=()=>{sel="";draft.date=$("#f_date").value;drawChips()});
   ["f_name","f_turma","f_email"].forEach(i=>$("#"+i).oninput=e=>draft[i.slice(2)]=e.target.value);$("#f_go").onclick=submit;drawChips();
