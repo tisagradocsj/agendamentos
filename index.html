@@ -106,7 +106,7 @@ const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)},
 const today=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate())};
 const br=s=>parse(s).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
 const WDS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],WDN=["domingo","segunda","terça","quarta","quinta","sexta","sábado"],DEFD=[1,2,3,4,5];
-const sdays=(s,j)=>s.sd?.[j]??DEFD,okDay=(s,j,date)=>sdays(s,j).includes(parse(date).getDay());
+const sdays=(s,j)=>{const v=s.sd?.[j];return Array.isArray(v)?v:typeof v==="string"?v.split("").filter(c=>c>="0"&&c<="6").map(Number):DEFD},okDay=(s,j,date)=>sdays(s,j).includes(parse(date).getDay());
 const minH=()=>cfg.minHours??(cfg.minDays!=null?cfg.minDays*24:2);
 const startOf=(date,slot)=>new Date(`${date}T${slot.split("-")[0]}:00`);
 const bid=(lab,date,slot)=>[lab,date,slot.split("-")[0]].join("_"),find=(l,d,s)=>bookings.find(b=>b.id===bid(l,d,s));
@@ -151,7 +151,7 @@ onAuthStateChanged(auth,async u=>{
   unsub.push(onSnapshot(query(collection(db,"bookings"),where("startTs",">=",Timestamp.fromDate(today()))),q=>{bookings=q.docs.map(d=>({id:d.id,...d.data()}));if(tab!=="admin")render()}));
   if(isAdmin)unsub.push(onSnapshot(collection(db,"teachers"),q=>{teachers=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||""));if(tab==="admin"&&asub==="prof"&&!document.querySelector("dialog"))drawTeachers()}));
 });
-function resetW(){W=JSON.parse(JSON.stringify(cfg));W.minHours=minH();delete W.minDays;dirty=false}
+function resetW(){W=JSON.parse(JSON.stringify(cfg));W.minHours=minH();delete W.minDays;W.segments.forEach(s=>{if(s.sd)s.sd=s.slots.map((_,j)=>sdays(s,j))});dirty=false}
 
 function render(){
   if(!me)return;
@@ -272,7 +272,7 @@ function renderAdmin(){
     for(const s of W.segments)for(const x of s.slots)if(!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(x)||x.split("-")[0]>=x.split("-")[1])return toast(`Horário incompleto ou inválido em "${s.name}".`,"err");
     for(const s of W.segments)for(let j=0;j<s.slots.length;j++)if(!sdays(s,j).length)return toast(`Selecione ao menos um dia da semana para o horário ${s.slots[j]} em "${s.name}".`,"err");
     W.school=(W.school||"").trim()||"Escola";W.segments.forEach(s=>{const p=s.slots.map((x,j)=>[x,sdays(s,j)]).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);s.slots=p.map(x=>x[0]);s.sd=p.map(x=>x[1])});
-    try{await setDoc(doc(db,"config","main"),W);dirty=false;toast("Configurações salvas.");renderAdmin()}catch{toast("Sem permissão para salvar.","err")}};
+    try{const P=JSON.parse(JSON.stringify(W));P.segments.forEach(s=>{s.sd=s.slots.map((_,j)=>sdays(s,j).join(""))});await setDoc(doc(db,"config","main"),P);dirty=false;toast("Configurações salvas.");renderAdmin()}catch(e){console.error(e);toast(e.code==="permission-denied"?"Sem permissão para salvar.":"Não foi possível salvar: "+(e.message||e.code),"err")}};
 }
 function drawTeachers(){
   const el=$("#t_list");if(!el)return;const q=tq.toLowerCase(),l=teachers.filter(t=>!q||(t.name||"").toLowerCase().includes(q)||t.id.includes(q));
