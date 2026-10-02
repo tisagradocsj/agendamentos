@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agendamentos</title>
+<style>
+:root{--bg:#f4f6fa;--sf:#fff;--tx:#172033;--mut:#667085;--bd:#e3e8ef;--pr:#2457e6;--prh:#1c47c2;--prs:#e8effd;--ok:#e7f6ee;--okx:#0b6b3a;--bz:#fdecec;--bzx:#b42318;--wn:#fff4e0;--wnx:#9a5b00;--sh:0 1px 2px rgba(16,24,40,.06),0 1px 3px rgba(16,24,40,.08);--r:12px}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141c;--sf:#171e29;--tx:#e9eef6;--mut:#95a3b8;--bd:#2a3444;--pr:#5b8def;--prh:#7aa2f5;--prs:#1b2a4a;--ok:#12301f;--okx:#6fd9a0;--bz:#3a1c1f;--bzx:#ff9aa5;--wn:#3a2c10;--wnx:#f5c46b;--sh:none}input[type=date]::-webkit-calendar-picker-indicator,input[type=time]::-webkit-calendar-picker-indicator{filter:invert(1);cursor:pointer}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+button{font:inherit;color:inherit;cursor:pointer}:focus-visible{outline:2px solid var(--pr);outline-offset:2px}
+.hide{display:none!important}.mut{color:var(--mut);font-size:13px}svg{flex:none}
+/* topo e navegação */
+.top{position:sticky;top:0;z-index:20;background:var(--sf);border-bottom:1px solid var(--bd);padding:calc(10px + env(safe-area-inset-top)) 24px 10px}
+.top-in{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.logo{width:36px;height:36px;border-radius:10px;background:var(--pr);color:#fff;display:grid;place-items:center;font-weight:700}
+.brand{flex:1;min-width:0}.brand b{display:block;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.brand span{font-size:12px;color:var(--mut)}
+.avatar{width:38px;height:38px;border-radius:50%;border:1px solid var(--bd);background:var(--prs);color:var(--pr);font-weight:600}
+.menu{position:absolute;right:24px;top:100%;margin-top:6px;background:var(--sf);border:1px solid var(--bd);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.18);min-width:220px;padding:6px;z-index:30}
+.menu .who{padding:8px 10px;border-bottom:1px solid var(--bd);margin-bottom:4px}.menu button{display:flex;gap:10px;align-items:center;width:100%;border:0;background:none;padding:9px 10px;border-radius:8px;text-align:left}.menu button:hover{background:var(--bg)}
+nav{max-width:1080px;margin:0 auto;display:flex;gap:4px;padding:0 24px}
+nav button{display:flex;align-items:center;gap:8px;border:0;border-bottom:2px solid transparent;background:none;padding:12px 14px;color:var(--mut);font-weight:500}
+nav button.on{color:var(--pr);border-color:var(--pr)}nav .s{display:none}
+.navwrap{background:var(--sf);border-bottom:1px solid var(--bd)}
+main{max-width:1080px;margin:0 auto;padding:24px}
+h1.pt{font-size:22px;margin:0 0 4px}.sub{color:var(--mut);margin:0 0 18px}
+.card{background:var(--sf);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);padding:20px;margin-bottom:16px}
+.card h2{font-size:15px;margin:0 0 4px}.card .hint{color:var(--mut);font-size:13px;margin:0 0 14px}
+/* formulários */
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px}
+.f label{display:block;font-size:13px;font-weight:500;margin:0 0 6px}
+.f input,.f select{width:100%;height:44px;padding:0 12px;border:1px solid var(--bd);border-radius:10px;background:var(--sf);color:var(--tx);font:inherit}
+.f input:focus,.f select:focus{border-color:var(--pr);box-shadow:0 0 0 3px var(--prs);outline:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:42px;padding:0 16px;border-radius:10px;border:1px solid transparent;font-weight:600}
+.btn.pri{background:var(--pr);color:#fff}.btn.pri:hover{background:var(--prh)}.btn.sec{background:var(--sf);border-color:var(--bd)}.btn.sec:hover{background:var(--bg)}
+.btn.danger{background:var(--bz);color:var(--bzx)}.btn.sm{height:34px;padding:0 12px;font-size:13px}.btn:disabled{opacity:.55;cursor:not-allowed}
+.icon{border:0;background:none;border-radius:8px;padding:6px;color:var(--mut)}.icon:hover{background:var(--bg)}
+.badge{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600}.badge.ok{background:var(--ok);color:var(--okx)}.badge.bz{background:var(--bz);color:var(--bzx)}.badge.mu{background:var(--bg);color:var(--mut)}
+/* horários (chips) */
+.chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px}
+.chip{border:1px solid var(--bd);background:var(--sf);border-radius:10px;padding:10px;text-align:left}.chip b{display:block}.chip small{color:var(--mut)}
+.chip:hover:not(:disabled){border-color:var(--pr)}.chip.on{background:var(--pr);border-color:var(--pr);color:#fff}.chip.on small{color:#dbe6ff}
+.chip:disabled{background:var(--bg);color:var(--mut);cursor:not-allowed}.chip:disabled b{text-decoration:line-through}
+/* agenda */
+.legend{display:flex;gap:14px;font-size:13px;color:var(--mut);margin:12px 0}.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px}
+.scroll{overflow-x:auto}table{border-collapse:separate;border-spacing:4px;width:100%;min-width:640px}th{font-size:12px;color:var(--mut);font-weight:600;text-align:left;padding:4px 6px}
+td.c{border-radius:8px;padding:8px;font-size:13px;vertical-align:top;min-width:110px}td.free{background:var(--ok);color:var(--okx)}td.busy{background:var(--bz);color:var(--bzx)}td.sg{font-weight:600;padding:12px 6px 4px}
+.dn{display:flex;gap:8px;align-items:center}.dn input{flex:1}
+.slot{display:flex;justify-content:space-between;gap:10px;padding:12px;border-radius:10px;margin-bottom:6px;font-size:14px}.slot.free{background:var(--ok);color:var(--okx)}.slot.busy{background:var(--bz);color:var(--bzx)}.seg{font-weight:600;margin:16px 0 8px}
+/* listas */
+.row{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--bd)}.row:last-child{border:0}.row .g{flex:1;min-width:0;overflow-wrap:anywhere}
+.date{width:52px;text-align:center;border-radius:10px;background:var(--prs);color:var(--pr);padding:6px 0;line-height:1.1}.date b{display:block;font-size:20px}.date span{font-size:11px;text-transform:uppercase}
+.av{width:38px;height:38px;border-radius:50%;background:var(--prs);color:var(--pr);display:grid;place-items:center;font-weight:600;flex:none}
+.empty{text-align:center;color:var(--mut);padding:30px 10px}
+.tabs{display:inline-flex;background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:3px;margin-bottom:16px;max-width:100%;overflow-x:auto}
+.tabs button{border:0;background:none;padding:7px 14px;border-radius:8px;color:var(--mut);font-weight:500;white-space:nowrap}.tabs button.on{background:var(--sf);color:var(--tx);box-shadow:var(--sh)}
+.savebar{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between;background:var(--sf);border:1px solid var(--bd);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,.15);padding:10px 14px}
+.slotrow{display:flex;gap:8px;align-items:center;margin-bottom:8px}.slotrow input{width:auto;flex:1}
+/* modal e toast */
+dialog{border:0;border-radius:14px;padding:0;width:min(520px,calc(100vw - 24px));background:var(--sf);color:var(--tx);box-shadow:0 20px 60px rgba(0,0,0,.3)}dialog::backdrop{background:rgba(10,15,25,.55)}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid var(--bd)}.mh h3{margin:0;font-size:17px}.mb{padding:18px 20px;display:grid;gap:14px}.mf{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px;border-top:1px solid var(--bd);flex-wrap:wrap}.mf .left{margin-right:auto}
+#toasts{position:fixed;z-index:99;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom));display:grid;gap:8px;width:min(92vw,420px)}
+.toast{padding:12px 14px;border-radius:10px;background:#172033;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.25);font-size:14px}.toast.err{background:#b42318}.toast.ok{background:#0b6b3a}
+/* login */
+.auth{min-height:100vh;display:grid;grid-template-columns:1fr 1fr}.hero{background:linear-gradient(140deg,#1b3fa8,#2f6bff 60%,#6b9bff);color:#fff;padding:48px;display:flex;flex-direction:column;justify-content:space-between}
+.hero h2{font-size:30px;line-height:1.2;margin:0 0 12px}.hero p{opacity:.9;max-width:420px}
+.form{display:grid;place-items:center;padding:28px}.form>div{width:min(380px,100%);display:grid;gap:14px}.form h1{margin:0;font-size:24px}
+.pw{position:relative}.pw button{position:absolute;right:6px;top:6px;height:32px;border:0;background:none;color:var(--mut);padding:0 8px}
+.lnk{border:0;background:none;color:var(--pr);padding:0;font-weight:500;text-align:left}.sep{display:flex;align-items:center;gap:10px;color:var(--mut);font-size:13px}.sep:before,.sep:after{content:"";flex:1;height:1px;background:var(--bd)}
+.alert{padding:10px 12px;border-radius:10px;font-size:14px}.alert.err{background:var(--bz);color:var(--bzx)}.alert.ok{background:var(--ok);color:var(--okx)}
+#boot{position:fixed;inset:0;display:grid;place-items:center;background:var(--bg);z-index:100}.spin{width:34px;height:34px;border:3px solid var(--bd);border-top-color:var(--pr);border-radius:50%;animation:s .8s linear infinite}@keyframes s{to{transform:rotate(360deg)}}
+@media (max-width:760px){
+ .auth{grid-template-columns:1fr}.hero{display:none}
+ .top{padding-left:14px;padding-right:14px}main{padding:16px 14px calc(96px + env(safe-area-inset-bottom))}.menu{right:14px}
+ .navwrap{position:fixed;bottom:0;left:0;right:0;z-index:25;border-top:1px solid var(--bd);border-bottom:0;padding-bottom:env(safe-area-inset-bottom)}
+ nav{padding:0 4px;gap:0}nav button{flex:1;flex-direction:column;gap:2px;font-size:11px;padding:8px 2px;border-bottom:0}nav button.on{background:var(--prs);border-radius:10px;margin:4px}nav .l{display:none}nav .s{display:inline}
+ .f input,.f select{font-size:16px}.grid{grid-template-columns:1fr}.card{padding:16px}.chips{grid-template-columns:repeat(2,1fr)}
+ #toasts{bottom:calc(92px + env(safe-area-inset-bottom))}.mf .btn{flex:1}
+}
+</style></head><body>
+<div id="boot"><div class="spin"></div></div><div id="toasts"></div>
+<div id="login" class="auth hide"><div class="hero"><b style="font-size:18px">Agendamentos</b><div><h2>Reserve espaços em poucos cliques.</h2><p>Veja a disponibilidade em tempo real e evite conflitos de horário.</p></div><small style="opacity:.7">Acesso restrito a professores cadastrados</small></div>
+<div class="form"><div><h1>Entrar</h1><p class="mut" style="margin:-8px 0 0">Use o e-mail cadastrado pela escola.</p><div id="lmsg"></div>
+<div class="f"><label for="l_email">E-mail</label><input id="l_email" type="email" autocomplete="username" inputmode="email"></div>
+<div class="f"><label for="l_pw">Senha</label><div class="pw"><input id="l_pw" type="password" autocomplete="current-password"><button type="button" id="l_eye">Mostrar</button></div></div>
+<button class="btn pri" id="l_go">Entrar</button><button class="lnk" id="l_forgot">Esqueci minha senha</button>
+<div class="sep">ou continue com</div><div class="grid" style="grid-template-columns:1fr 1fr"><button class="btn sec" id="gG">Google</button><button class="btn sec" id="gM">Microsoft</button></div></div></div></div>
+<div id="app" class="hide">
+<header class="top"><div class="top-in"><div class="logo" id="logo">L</div><div class="brand"><b id="school"></b><span>Agendamentos</span></div>
+<div style="position:relative"><button class="avatar" id="av" aria-label="Menu do usuário"></button><div class="menu hide" id="um"><div class="who"><b id="um_n"></b><div class="mut" id="um_e"></div></div><button id="um_pw"></button><button id="um_out"></button></div></div></div></header>
+<div class="navwrap"><nav id="nav"></nav></div>
+<main><section id="book"></section><section id="agenda" class="hide"></section><section id="mine" class="hide"></section><section id="admin" class="hide"></section></main></div>
+<script type="module">
+import{initializeApp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import{getAuth,onAuthStateChanged,signInWithPopup,signInWithEmailAndPassword,createUserWithEmailAndPassword,sendPasswordResetEmail,updatePassword,signOut,GoogleAuthProvider,OAuthProvider}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import{getFirestore,doc,collection,onSnapshot,setDoc,updateDoc,deleteDoc,getDoc,Timestamp}from"https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+// >>> Se o seu firebaseConfig for diferente deste, cole o seu aqui.
+const firebaseConfig={apiKey:"AIzaSyDi-u9NYFgNPCeQOxcBjtOA2ZJ4HoL-Az8",authDomain:"agenda-csj.firebaseapp.com",projectId:"agenda-csj",appId:"1:291534090093:web:6a7528dd7b558b42777464"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const secAuth=getAuth(initializeApp(firebaseConfig,"sec"));
+const DEF={school:"Minha Escola",minHours:2,maxDays:30,labs:[{id:"l1",name:"Laboratório de Informática"}],segments:[{id:"s1",name:"Anos iniciais",slots:["07:30-08:20","08:20-09:10"]},{id:"s2",name:"Anos finais",slots:["07:30-08:20","08:20-09:10"]},{id:"s3",name:"Ensino médio",slots:["07:30-08:20","08:20-09:10"]}]};
+const IC={calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',set:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',plus:'<path d="M12 5v14M5 12h14"/>',out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M16 7l3 3"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'};
+const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
+
+let cfg=DEF,hasCfg=false,bookings=[],teachers=[],me=null,myName="",isAdmin=false,tab="book",asub="prof",agLab="",agWeek="",agDay="",draft={},sel="",unsub=[],blocked="",W=null,dirty=false,tq="";
+const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)},addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
+const today=()=>{const t=new Date();return new Date(t.getFullYear(),t.getMonth(),t.getDate())};
+const br=s=>parse(s).toLocaleDateString("pt-BR",{weekday:"short",day:"2-digit",month:"2-digit"});
+const minH=()=>cfg.minHours??(cfg.minDays!=null?cfg.minDays*24:2);
+const startOf=(date,slot)=>new Date(`${date}T${slot.split("-")[0]}:00`);
+const bid=(lab,date,slot)=>[lab,date,slot.split("-")[0]].join("_"),find=(l,d,s)=>bookings.find(b=>b.id===bid(l,d,s));
+const labName=id=>cfg.labs.find(l=>l.id===id)?.name||id,initials=n=>(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
+const mobile=()=>matchMedia("(max-width:760px)").matches;matchMedia("(max-width:760px)").onchange=()=>{if(me)render()};
+const errTxt=e=>({"auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"E-mail ou senha incorretos.","auth/user-not-found":"E-mail ou senha incorretos.","auth/invalid-email":"E-mail inválido.","auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.","auth/weak-password":"Senha fraca (mínimo 6 caracteres).","auth/email-already-in-use":"Esse e-mail já tem conta de acesso.","auth/operation-not-allowed":"Login por e-mail/senha não está ativado no Firebase.","auth/popup-closed-by-user":"Login cancelado."}[e.code]||"Erro: "+(e.code||e.message));
+$("#um_pw").innerHTML=ic("key")+" Alterar senha";$("#um_out").innerHTML=ic("out")+" Sair";
+function toast(t,type="ok"){const d=document.createElement("div");d.className="toast "+type;d.textContent=t;$("#toasts").append(d);setTimeout(()=>d.remove(),4500)}
+function modal({title,body,actions=[],onOpen}){return new Promise(res=>{const d=document.createElement("dialog");
+  d.innerHTML=`<form method="dialog" class="mh"><h3>${title}</h3><button class="icon" aria-label="Fechar">${ic("x")}</button></form><div class="mb">${body}</div><div class="mf"></div>`;
+  actions.forEach(a=>{const b=document.createElement("button");b.type="button";b.className="btn "+(a.cls||"sec")+(a.left?" left":"");b.textContent=a.label;
+    b.onclick=async()=>{b.disabled=true;const r=a.run?await a.run(d):true;b.disabled=false;if(r!==false){res(a.value??true);d.close()}};d.querySelector(".mf").append(b)});
+  d.onclose=()=>{d.remove();res(false)};document.body.append(d);d.showModal();onOpen?.(d)})}
+const ask=(title,text,label,danger)=>modal({title,body:`<p style="margin:0">${text}</p>`,actions:[{label:"Cancelar"},{label,cls:danger?"danger":"pri"}].map((a,i)=>({...a,value:i===1}))});
+
+/* ---------- Login ---------- */
+const lmsg=(t,ok)=>$("#lmsg").innerHTML=t?`<div class="alert ${ok?"ok":"err"}">${esc(t)}</div>`:"";
+const social=async p=>{lmsg("");try{await signInWithPopup(auth,p)}catch(e){lmsg(errTxt(e))}};
+$("#gG").onclick=()=>social(new GoogleAuthProvider());$("#gM").onclick=()=>social(new OAuthProvider("microsoft.com"));
+$("#l_go").onclick=async()=>{blocked="";lmsg("");const b=$("#l_go");b.disabled=true;b.textContent="Entrando…";try{await signInWithEmailAndPassword(auth,$("#l_email").value.trim(),$("#l_pw").value)}catch(e){lmsg(errTxt(e))}b.disabled=false;b.textContent="Entrar"};
+$("#l_pw").onkeydown=e=>{if(e.key==="Enter")$("#l_go").click()};
+$("#l_eye").onclick=()=>{const i=$("#l_pw"),s=i.type==="password";i.type=s?"text":"password";$("#l_eye").textContent=s?"Ocultar":"Mostrar"};
+$("#l_forgot").onclick=async()=>{const m=$("#l_email").value.trim();if(!m)return lmsg("Digite seu e-mail acima.");try{await sendPasswordResetEmail(auth,m);lmsg("Se o e-mail estiver cadastrado, enviamos o link para redefinir a senha.",true)}catch(e){lmsg(errTxt(e))}};
+$("#av").onclick=e=>{e.stopPropagation();$("#um").classList.toggle("hide")};document.addEventListener("click",()=>$("#um").classList.add("hide"));
+$("#um_out").onclick=()=>signOut(auth);
+$("#um_pw").onclick=()=>modal({title:"Alterar senha",body:`<div class="f"><label>Nova senha</label><input id="np1" type="password" autocomplete="new-password"></div><div class="f"><label>Confirmar nova senha</label><input id="np2" type="password" autocomplete="new-password"></div>`,
+  actions:[{label:"Cancelar"},{label:"Salvar",cls:"pri",run:async()=>{const a=$("#np1").value;if(a.length<6){toast("A senha precisa ter pelo menos 6 caracteres.","err");return false}if(a!==$("#np2").value){toast("As senhas não conferem.","err");return false}
+    try{await updatePassword(auth.currentUser,a);toast("Senha alterada.")}catch(e){toast(e.code==="auth/requires-recent-login"?"Por segurança, saia, entre de novo e repita.":errTxt(e),"err");return false}}}]});
+
+onAuthStateChanged(auth,async u=>{
+  unsub.forEach(f=>f());unsub=[];me=null;isAdmin=false;$("#boot").classList.add("hide");
+  if(!u){$("#login").classList.remove("hide");$("#app").classList.add("hide");if(blocked)lmsg(blocked);return}
+  const email=(u.email||"").toLowerCase();let t=null;
+  try{isAdmin=(await getDoc(doc(db,"admins",email))).exists()}catch{}
+  try{const s=await getDoc(doc(db,"teachers",email));if(s.exists())t=s.data()}catch{}
+  if(!isAdmin&&!(t&&t.active)){blocked="Seu acesso não está liberado. Peça ao administrador para cadastrar o e-mail "+email+".";await signOut(auth);return}
+  me=u;myName=u.displayName||t?.name||"";blocked="";lmsg("");
+  $("#login").classList.add("hide");$("#app").classList.remove("hide");
+  $("#av").textContent=initials(myName||email);$("#um_n").textContent=myName||email;$("#um_e").textContent=email+(isAdmin?" · administrador":"");
+  $("#um_pw").classList.toggle("hide",!u.providerData.some(p=>p.providerId==="password"));
+  unsub.push(onSnapshot(doc(db,"config","main"),s=>{hasCfg=s.exists();cfg=hasCfg?s.data():DEF;if(!dirty)resetW();$("#book").dataset.ready="";$("#school").textContent=cfg.school;$("#logo").textContent=initials(cfg.school)[0];if(tab!=="admin")render();else if(!dirty)render()}));
+  unsub.push(onSnapshot(collection(db,"bookings"),q=>{bookings=q.docs.map(d=>({id:d.id,...d.data()}));if(tab!=="admin")render()}));
+  if(isAdmin)unsub.push(onSnapshot(collection(db,"teachers"),q=>{teachers=q.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(a.name||"").localeCompare(b.name||""));if(tab==="admin"&&asub==="prof"&&!document.querySelector("dialog"))drawTeachers()}));
+});
+function resetW(){W=JSON.parse(JSON.stringify(cfg));W.minHours=minH();delete W.minDays;dirty=false}
+
+function render(){
+  if(!me)return;
+  const items=[["book","calendar","Agendar","Agendar"],["agenda","grid","Agenda dos labs","Agenda"],["mine","list","Meus agendamentos","Meus"]];if(isAdmin)items.push(["admin","set","Administração","Admin"]);
+  $("#nav").innerHTML=items.map(([k,i,l,s])=>`<button data-t="${k}" class="${tab===k?"on":""}">${ic(i)}<span class="l">${l}</span><span class="s">${s}</span></button>`).join("");
+  $("#nav").querySelectorAll("button").forEach(b=>b.onclick=()=>{if(tab==="admin"&&dirty&&b.dataset.t!=="admin"&&!confirm("Há alterações não salvas. Sair mesmo assim?"))return;tab=b.dataset.t;render()});
+  ["book","agenda","mine","admin"].forEach(t=>$("#"+t).classList.toggle("hide",t!==tab));
+  ({book:renderBook,agenda:renderAgenda,mine:renderMine,admin:renderAdmin})[tab]();
+}
+const head=(t,s)=>`<h1 class="pt">${t}</h1><p class="sub">${s}</p>`;
+
+/* ---------- Agendar ---------- */
+function renderBook(){
+  const el=$("#book");if(el.dataset.ready){drawChips();return}
+  if(!hasCfg){el.innerHTML=head("Novo agendamento","")+`<div class="card empty">O administrador ainda não configurou laboratórios e horários.</div>`;return}
+  const t=today(),mn=iso(t),mx=iso(addD(t,cfg.maxDays));
+  el.innerHTML=head("Novo agendamento",`Antecedência mínima de ${minH()} h · até ${cfg.maxDays} dias à frente`)+`
+  <div class="card"><h2>1. Onde e quando</h2><p class="hint">Escolha o laboratório, o segmento e a data.</p>
+  <div class="grid"><div class="f"><label>Laboratório</label><select id="f_lab">${cfg.labs.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select></div>
+  <div class="f"><label>Segmento</label><select id="f_seg">${cfg.segments.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("")}</select></div>
+  <div class="f"><label>Data</label><input type="date" id="f_date" min="${mn}" max="${mx}" value="${draft.date||""}"></div></div>
+  <label style="display:block;font-size:13px;font-weight:500;margin:18px 0 8px">Horário</label><div id="chips" class="chips"></div></div>
+  <div class="card"><h2>2. Seus dados</h2><p class="hint">Preenchemos o que sabemos. Confira antes de confirmar.</p>
+  <div class="grid"><div class="f"><label>Professor(a)</label><input id="f_name" value="${esc(draft.name??myName)}"></div><div class="f"><label>Turma</label><input id="f_turma" placeholder="Ex.: 7º B" value="${esc(draft.turma??"")}"></div><div class="f"><label>E-mail</label><input id="f_email" type="email" value="${esc(draft.email??me.email??"")}"></div></div>
+  <div style="margin-top:18px"><button class="btn pri" id="f_go">Confirmar agendamento</button></div></div>`;
+  el.dataset.ready=1;["f_lab","f_seg","f_date"].forEach(i=>$("#"+i).onchange=()=>{sel="";draft.date=$("#f_date").value;drawChips()});
+  ["f_name","f_turma","f_email"].forEach(i=>$("#"+i).oninput=e=>draft[i.slice(2)]=e.target.value);$("#f_go").onclick=submit;drawChips();
+}
+function drawChips(){
+  const c=$("#chips");if(!c)return;const seg=cfg.segments.find(x=>x.id===$("#f_seg").value),lab=$("#f_lab").value,date=$("#f_date").value,now=Date.now();
+  if(!date){c.innerHTML='<div class="mut">Escolha uma data para ver os horários.</div>';return}
+  const sl=seg?.slots||[];if(!sl.length){c.innerHTML='<div class="mut">Este segmento não tem horários cadastrados.</div>';return}
+  c.innerHTML=sl.map(s=>{const busy=find(lab,date,s),soon=!busy&&startOf(date,s)-now<minH()*36e5,[a,b]=s.split("-");
+    return`<button class="chip ${sel===s?"on":""}" data-s="${esc(s)}" ${busy||soon?"disabled":""}><b>${esc(a)} – ${esc(b)}</b><small>${busy?"Ocupado":soon?"Prazo encerrado":"Disponível"}</small></button>`}).join("");
+  c.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{sel=b.dataset.s;drawChips()});
+}
+async function submit(){
+  const g=i=>$("#f_"+i).value.trim(),lab=g("lab"),seg=g("seg"),date=g("date"),name=g("name"),turma=g("turma"),email=g("email"),slot=sel;
+  if(!date||!slot)return toast("Escolha a data e um horário.","err");if(!name||!turma||!email)return toast("Preencha nome, turma e e-mail.","err");
+  const st=startOf(date,slot),diff=st-Date.now();
+  if(st.getDay()%6===0)return toast("Escolha um dia útil (segunda a sexta).","err");
+  if(diff<minH()*36e5)return toast(`É preciso agendar com pelo menos ${minH()} hora(s) de antecedência.`,"err");
+  if(diff>cfg.maxDays*864e5)return toast(`Só é possível agendar até ${cfg.maxDays} dias à frente.`,"err");
+  const b=$("#f_go");b.disabled=true;
+  try{await setDoc(doc(db,"bookings",bid(lab,date,slot)),{lab,seg,date,start:slot.split("-")[0],slot,name,turma,email,uid:me.uid,startTs:Timestamp.fromDate(st),created:new Date().toISOString()});
+    toast("Agendamento confirmado!");sel="";draft.turma="";$("#f_turma").value="";drawChips()}
+  catch(e){toast(e.code==="permission-denied"?"Horário já ocupado, fora do prazo ou acesso não liberado.":"Erro: "+e.message,"err")}b.disabled=false;
+}
+
+/* ---------- Agenda ---------- */
+const monday=d=>addD(d,-((d.getDay()+6)%7));
+function renderAgenda(){
+  if(!agLab)agLab=cfg.labs[0]?.id||"";if(!agWeek)agWeek=iso(monday(today()));if(!agDay)agDay=iso(today());
+  const labSel=`<div class="f"><label>Laboratório</label><select id="a_lab">${cfg.labs.map(l=>`<option value="${esc(l.id)}" ${l.id===agLab?"selected":""}>${esc(l.name)}</option>`).join("")}</select></div>`;
+  let body;
+  if(mobile()){
+    body=`<div class="grid">${labSel}<div class="f"><label>Dia</label><div class="dn"><button class="btn sec sm" id="a_p">◀</button><input type="date" id="a_d" value="${agDay}"><button class="btn sec sm" id="a_n">▶</button></div></div></div>`+
+    cfg.segments.map(s=>`<div class="seg">${esc(s.name)}</div>`+s.slots.map(sl=>{const b=find(agLab,agDay,sl);return b?`<div class="slot busy"><span>${esc(sl)}</span><span><b>${esc(b.name)}</b> · ${esc(b.turma)}</span></div>`:`<div class="slot free"><span>${esc(sl)}</span><span>Livre</span></div>`}).join("")).join("");
+  }else{
+    const days=[0,1,2,3,4].map(i=>iso(addD(parse(agWeek),i)));let rows="";
+    cfg.segments.forEach(s=>{rows+=`<tr><td class="sg" colspan="6">${esc(s.name)}</td></tr>`;s.slots.forEach(sl=>{rows+=`<tr><th>${esc(sl)}</th>`+days.map(d=>{const b=find(agLab,d,sl);return b?`<td class="c busy"><b>${esc(b.name)}</b><br>${esc(b.turma)}</td>`:`<td class="c free">Livre</td>`}).join("")+"</tr>"})});
+    body=`<div class="grid">${labSel}<div class="f"><label>Semana</label><div class="dn"><button class="btn sec sm" id="a_p">◀</button><input type="date" id="a_w" value="${agWeek}"><button class="btn sec sm" id="a_n">▶</button></div></div></div><div class="scroll" style="margin-top:12px"><table><tr><th></th>${days.map(d=>`<th>${br(d)}</th>`).join("")}</tr>${rows}</table></div>`;
+  }
+  $("#agenda").innerHTML=head("Agenda dos laboratórios","Acompanhe quando cada laboratório está ocupado.")+`<div class="card">${body}<div class="legend"><span><i class="dot" style="background:var(--okx)"></i>Livre</span><span><i class="dot" style="background:var(--bzx)"></i>Ocupado</span></div></div>`;
+  $("#a_lab").onchange=e=>{agLab=e.target.value;renderAgenda()};
+  const step=n=>mobile()?(agDay=iso(addD(parse(agDay),n))):(agWeek=iso(addD(parse(agWeek),7*n)));
+  $("#a_p").onclick=()=>{step(-1);renderAgenda()};$("#a_n").onclick=()=>{step(1);renderAgenda()};
+  if($("#a_w"))$("#a_w").onchange=e=>{if(e.target.value){agWeek=iso(monday(parse(e.target.value)));renderAgenda()}};
+  if($("#a_d"))$("#a_d").onchange=e=>{if(e.target.value){agDay=e.target.value;renderAgenda()}};
+}
+
+/* ---------- Meus agendamentos ---------- */
+function renderMine(){
+  const t=iso(today()),list=bookings.filter(b=>(isAdmin||b.uid===me.uid)&&b.date>=t).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
+  $("#mine").innerHTML=head(isAdmin?"Todos os agendamentos":"Meus agendamentos","Próximos horários reservados.")+`<div class="card">`+(list.length?list.map(b=>{const d=parse(b.date);
+    return`<div class="row"><div class="date"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-BR",{month:"short"}).replace(".","")}</span></div><div class="g"><b>${esc(b.slot)} · ${esc(labName(b.lab))}</b><div class="mut">${d.toLocaleDateString("pt-BR",{weekday:"long"})} · Turma ${esc(b.turma)}${isAdmin?" · "+esc(b.name):""}</div></div><button class="btn danger sm" data-del="${esc(b.id)}">Cancelar</button></div>`}).join(""):'<div class="empty">Nenhum agendamento futuro.</div>')+"</div>";
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(await ask("Cancelar agendamento","O horário ficará livre para outros professores.","Cancelar agendamento",true))try{await deleteDoc(doc(db,"bookings",b.dataset.del));toast("Agendamento cancelado.")}catch{toast("Sem permissão para cancelar.","err")}});
+}
+
+/* ---------- Administração ---------- */
+function renderAdmin(){
+  const tabs=[["prof","Professores"],["labs","Laboratórios"],["hor","Horários"],["pra","Prazos"]];
+  $("#admin").innerHTML=head("Administração","Gerencie professores, laboratórios, horários e prazos.")+`<div class="tabs">${tabs.map(([k,l])=>`<button data-a="${k}" class="${asub===k?"on":""}">${l}</button>`).join("")}</div><div id="asub"></div>`;
+  $("#admin").querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{if(asub!=="prof"&&dirty&&b.dataset.a==="prof"&&!confirm("Há alterações não salvas. Continuar?"))return;asub=b.dataset.a;renderAdmin()});
+  if(asub==="prof"){$("#asub").innerHTML=`<div class="card"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:6px"><div style="flex:1;min-width:200px"><h2>Professores</h2><p class="hint" style="margin:0">Só e-mails cadastrados conseguem entrar e agendar.</p></div><button class="btn pri" id="t_new">${ic("plus")} Novo professor</button></div>
+    <div class="f" style="margin:14px 0"><input id="t_q" placeholder="Buscar por nome ou e-mail" value="${esc(tq)}"></div><div id="t_list"></div></div>`;
+    $("#t_new").onclick=()=>openTeacher();$("#t_q").oninput=e=>{tq=e.target.value;drawTeachers()};drawTeachers();return}
+  let h="";
+  if(asub==="labs")h=`<div class="card"><h2>Laboratórios</h2><p class="hint">Espaços que os professores podem reservar.</p>${W.labs.map((l,i)=>`<div class="slotrow"><div class="f" style="flex:1"><input data-lab="${i}" value="${esc(l.name)}" aria-label="Nome do laboratório"></div><button class="btn danger sm" data-rl="${i}">${ic("trash",16)}</button></div>`).join("")}<button class="btn sec sm" id="c_al">${ic("plus",16)} Laboratório</button></div>`;
+  if(asub==="hor")h=W.segments.map((s,i)=>`<div class="card"><div class="slotrow"><div class="f" style="flex:1"><label>Segmento</label><input data-sn="${i}" value="${esc(s.name)}"></div><button class="btn danger sm" data-rs="${i}" style="margin-top:22px">${ic("trash",16)}</button></div>
+    <label class="mut" style="display:block;margin:6px 0">Horários (início e fim)</label>${s.slots.map((x,j)=>{const[a,b]=x.split("-");return`<div class="slotrow"><div class="f" style="flex:1"><input type="time" data-sa="${i},${j}" value="${a||""}"></div><span class="mut">até</span><div class="f" style="flex:1"><input type="time" data-sb="${i},${j}" value="${b||""}"></div><button class="icon" data-rx="${i},${j}" aria-label="Remover">${ic("x",16)}</button></div>`}).join("")}<button class="btn sec sm" data-ax="${i}">${ic("plus",16)} Horário</button></div>`).join("")+`<button class="btn sec" id="c_as">${ic("plus",16)} Segmento</button>`;
+  if(asub==="pra")h=`<div class="card"><h2>Prazos de agendamento</h2><p class="hint">Exemplo: mínimo 2 horas permite agendar às 10h o horário das 12h.</p><div class="grid"><div class="f"><label>Escola</label><input id="c_school" value="${esc(W.school)}"></div><div class="f"><label>Antecedência mínima (horas)</label><input type="number" min="0" step="1" id="c_min" value="${W.minHours}"></div><div class="f"><label>Antecedência máxima (dias)</label><input type="number" min="1" step="1" id="c_max" value="${W.maxDays}"></div></div></div>`;
+  $("#asub").innerHTML=h+`<div class="savebar"><span class="mut" id="c_st">${dirty?"Alterações não salvas":"Tudo salvo"}</span><div style="display:flex;gap:8px"><button class="btn sec" id="c_x" ${dirty?"":"disabled"}>Descartar</button><button class="btn pri" id="c_save" ${dirty?"":"disabled"}>Salvar alterações</button></div></div>`;
+  const A=$("#asub"),mk=()=>{dirty=true;$("#c_st").textContent="Alterações não salvas";$("#c_save").disabled=$("#c_x").disabled=false},ij=v=>v.split(",").map(Number);
+  A.querySelectorAll("[data-lab]").forEach(x=>x.oninput=()=>{W.labs[x.dataset.lab].name=x.value;mk()});A.querySelectorAll("[data-rl]").forEach(x=>x.onclick=()=>{W.labs.splice(x.dataset.rl,1);dirty=true;renderAdmin()});
+  A.querySelectorAll("[data-sn]").forEach(x=>x.oninput=()=>{W.segments[x.dataset.sn].name=x.value;mk()});A.querySelectorAll("[data-rs]").forEach(x=>x.onclick=()=>{W.segments.splice(x.dataset.rs,1);dirty=true;renderAdmin()});
+  const upd=(k,x)=>{const[i,j]=ij(x.dataset[k]),p=W.segments[i].slots[j].split("-");p[k==="sa"?0:1]=x.value;W.segments[i].slots[j]=p.join("-");mk()};
+  A.querySelectorAll("[data-sa]").forEach(x=>x.onchange=()=>upd("sa",x));A.querySelectorAll("[data-sb]").forEach(x=>x.onchange=()=>upd("sb",x));
+  A.querySelectorAll("[data-rx]").forEach(x=>x.onclick=()=>{const[i,j]=ij(x.dataset.rx);W.segments[i].slots.splice(j,1);dirty=true;renderAdmin()});
+  A.querySelectorAll("[data-ax]").forEach(x=>x.onclick=()=>{W.segments[x.dataset.ax].slots.push("-");dirty=true;renderAdmin()});
+  if($("#c_al"))$("#c_al").onclick=()=>{W.labs.push({id:"l"+Date.now(),name:"Novo laboratório"});dirty=true;renderAdmin()};
+  if($("#c_as"))$("#c_as").onclick=()=>{W.segments.push({id:"s"+Date.now(),name:"Novo segmento",slots:[]});dirty=true;renderAdmin()};
+  if($("#c_school")){$("#c_school").oninput=e=>{W.school=e.target.value;mk()};$("#c_min").oninput=e=>{W.minHours=Math.max(0,Math.round(+e.target.value||0));mk()};$("#c_max").oninput=e=>{W.maxDays=Math.max(1,Math.round(+e.target.value||1));mk()}}
+  $("#c_x").onclick=()=>{resetW();renderAdmin()};
+  $("#c_save").onclick=async()=>{
+    for(const s of W.segments)for(const x of s.slots)if(!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(x)||x.split("-")[0]>=x.split("-")[1])return toast(`Horário incompleto ou inválido em "${s.name}".`,"err");
+    W.school=(W.school||"").trim()||"Escola";W.segments.forEach(s=>s.slots.sort());
+    try{await setDoc(doc(db,"config","main"),W);dirty=false;toast("Configurações salvas.");renderAdmin()}catch{toast("Sem permissão para salvar.","err")}};
+}
+function drawTeachers(){
+  const el=$("#t_list");if(!el)return;const q=tq.toLowerCase(),l=teachers.filter(t=>!q||(t.name||"").toLowerCase().includes(q)||t.id.includes(q));
+  el.innerHTML=l.length?l.map(t=>`<div class="row"><div class="av">${esc(initials(t.name))}</div><div class="g"><b>${esc(t.name)}</b> <span class="badge ${t.active?"ok":"mu"}">${t.active?"Ativo":"Desativado"}</span><div class="mut">${esc(t.id)}</div></div><button class="btn sec sm" data-ed="${esc(t.id)}">Editar</button></div>`).join(""):`<div class="empty">${teachers.length?"Nenhum resultado.":"Nenhum professor cadastrado ainda."}</div>`;
+  el.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>openTeacher(teachers.find(t=>t.id===b.dataset.ed)));
+}
+const genPw=()=>{const c="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",a=new Uint32Array(10);crypto.getRandomValues(a);return[...a].map(n=>c[n%c.length]).join("")};
+function openTeacher(t){
+  const edit=!!t;
+  modal({title:edit?"Editar professor":"Novo professor",
+    body:`<div class="f"><label>Nome</label><input id="tm_name" value="${esc(t?.name||"")}"></div><div class="f"><label>E-mail</label><input id="tm_email" type="email" value="${esc(t?.id||"")}"></div>
+    ${edit?`<div class="f"><label>Status</label><select id="tm_act"><option value="1" ${t.active?"selected":""}>Ativo</option><option value="0" ${t.active?"":"selected"}>Desativado (não consegue entrar)</option></select></div>`:""}
+    <div class="f"><label>${edit?"Criar acesso com senha (opcional)":"Senha de acesso (opcional)"}</label><div class="dn"><input id="tm_pw" autocomplete="off" placeholder="Mínimo 6 caracteres"><button type="button" class="btn sec sm" id="tm_gen">Gerar</button></div>
+    <div class="mut" style="margin-top:6px">Sem senha, o professor entra pelo Google/Microsoft com este e-mail. Anote a senha: ela não pode ser consultada depois.</div></div>
+    ${edit?`<button type="button" class="lnk" id="tm_reset">Enviar link para o professor redefinir a senha</button>`:""}`,
+    onOpen:d=>{d.querySelector("#tm_gen").onclick=()=>d.querySelector("#tm_pw").value=genPw();const r=d.querySelector("#tm_reset");if(r)r.onclick=async()=>{try{await sendPasswordResetEmail(auth,t.id);toast("Link enviado para "+t.id)}catch(e){toast(errTxt(e),"err")}}},
+    actions:[...(edit?[{label:"Excluir",cls:"danger",left:true,value:"del",run:async d=>{if(!(await ask("Excluir professor",`${esc(t.name)} perderá o acesso ao sistema. Agendamentos já feitos continuam. A conta de login permanece no Firebase, mas sem acesso.`,"Excluir",true)))return false;
+        try{await deleteDoc(doc(db,"teachers",t.id));toast("Professor excluído.")}catch{toast("Sem permissão.","err");return false}}}]:[]),
+      {label:"Cancelar"},{label:"Salvar",cls:"pri",run:async d=>{
+        const g=i=>d.querySelector(i),name=g("#tm_name").value.trim(),email=g("#tm_email").value.trim().toLowerCase(),pw=g("#tm_pw").value,active=edit?g("#tm_act").value==="1":true;
+        if(!name||!/^\S+@\S+\.\S+$/.test(email)){toast("Informe nome e e-mail válidos.","err");return false}
+        if(pw&&pw.length<6){toast("A senha precisa ter pelo menos 6 caracteres.","err");return false}
+        if((!edit||email!==t.id)&&teachers.some(x=>x.id===email)){toast("Já existe professor com esse e-mail.","err");return false}
+        try{
+          if(edit&&email===t.id)await updateDoc(doc(db,"teachers",email),{name,active});
+          else{await setDoc(doc(db,"teachers",email),{name,email,active,created:t?.created||new Date().toISOString()});if(edit)await deleteDoc(doc(db,"teachers",t.id))}
+        }catch{toast("Sem permissão para salvar.","err");return false}
+        if(pw){try{await createUserWithEmailAndPassword(secAuth,email,pw);await signOut(secAuth);toast("Professor salvo e senha criada.")}catch(e){toast(e.code==="auth/email-already-in-use"?"Salvo. Esse e-mail já tem senha: use o link de redefinição.":"Salvo, mas a senha falhou: "+errTxt(e),"err")}}
+        else toast("Professor salvo.")}}]});
+}
+</script></body></html>
