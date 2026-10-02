@@ -270,8 +270,8 @@ function openTeacher(t){
   modal({title:edit?"Editar professor":"Novo professor",
     body:`<div class="f"><label>Nome</label><input id="tm_name" value="${esc(t?.name||"")}"></div><div class="f"><label>E-mail</label><input id="tm_email" type="email" value="${esc(t?.id||"")}"></div>
     ${edit?`<div class="f"><label>Status</label><select id="tm_act"><option value="1" ${t.active?"selected":""}>Ativo</option><option value="0" ${t.active?"":"selected"}>Desativado (não consegue entrar)</option></select></div>`:""}
-    <div class="f"><label>${edit?"Criar acesso com senha (opcional)":"Senha de acesso (opcional)"}</label><div class="dn"><input id="tm_pw" autocomplete="off" placeholder="Mínimo 6 caracteres"><button type="button" class="btn sec sm" id="tm_gen">Gerar</button></div>
-    <div class="mut" style="margin-top:6px">Sem senha, o professor entra pelo Google/Microsoft com este e-mail. Anote a senha: ela não pode ser consultada depois.</div></div>
+    <div class="f"><label>${edit?"Criar acesso com senha (obrigatória se mudar o e-mail)":"Senha de acesso"}</label><div class="dn"><input id="tm_pw" autocomplete="off" placeholder="Mínimo 6 caracteres"><button type="button" class="btn sec sm" id="tm_gen">Gerar</button></div>
+    <div class="mut" style="margin-top:6px">Anote a senha: ela não pode ser consultada depois.</div></div>
     ${edit?`<button type="button" class="lnk" id="tm_reset">Enviar link para o professor redefinir a senha</button>`:""}`,
     onOpen:d=>{d.querySelector("#tm_gen").onclick=()=>d.querySelector("#tm_pw").value=genPw();const r=d.querySelector("#tm_reset");if(r)r.onclick=async()=>{try{await sendPasswordResetEmail(auth,t.id);toast("Link enviado para "+t.id)}catch(e){toast(errTxt(e),"err")}}},
     actions:[...(edit?[{label:"Excluir",cls:"danger",left:true,value:"del",run:async d=>{if(!(await ask("Excluir professor",`${esc(t.name)} perderá o acesso ao sistema. Agendamentos já feitos continuam. A conta de login permanece no Firebase, mas sem acesso.`,"Excluir",true)))return false;
@@ -279,6 +279,7 @@ function openTeacher(t){
       {label:"Cancelar"},{label:"Salvar",cls:"pri",run:async d=>{
         const g=i=>d.querySelector(i),name=g("#tm_name").value.trim(),email=g("#tm_email").value.trim().toLowerCase(),pw=g("#tm_pw").value,active=edit?g("#tm_act").value==="1":true;
         if(!name||!/^\S+@\S+\.\S+$/.test(email)){toast("Informe nome e e-mail válidos.","err");return false}
+        if((!edit||email!==t.id)&&!pw){toast("Defina uma senha para o professor.","err");return false}
         if(pw&&pw.length<6){toast("A senha precisa ter pelo menos 6 caracteres.","err");return false}
         if((!edit||email!==t.id)&&teachers.some(x=>x.id===email)){toast("Já existe professor com esse e-mail.","err");return false}
         try{
