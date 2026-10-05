@@ -76,7 +76,7 @@ dialog{border:0;border-radius:14px;padding:0;width:min(520px,calc(100vw - 24px))
 }
 </style></head><body>
 <div id="boot"><div class="spin"></div></div><div id="toasts"></div>
-<div id="login" class="auth hide"><div class="hero"><b style="font-size:18px">Agendamentos</b><div><h2>Reserve espaços em poucos cliques.</h2><p>Veja a disponibilidade em tempo real e evite conflitos de horário.</p></div><small style="opacity:.7">Acesso restrito a professores cadastrados</small></div>
+<div id="login" class="auth hide"><div class="hero"><b style="font-size:18px">Agendamentos</b><div><h2>Reserve espaços em poucos cliques.</h2><p>Veja a disponibilidade em tempo real e evite conflitos de horário.</p></div><small style="opacity:.7">Acesso restrito a usuários cadastrados</small></div>
 <div class="form"><div><h1>Entrar</h1><p class="mut" style="margin:-8px 0 0">Use o e-mail cadastrado pela escola.</p><div id="lmsg"></div>
 <div class="f"><label for="l_email">E-mail</label><input id="l_email" type="email" autocomplete="username" inputmode="email"></div>
 <div class="f"><label for="l_pw">Senha</label><div class="pw"><input id="l_pw" type="password" autocomplete="current-password"><button type="button" id="l_eye">Mostrar</button></div></div>
@@ -233,20 +233,20 @@ function renderMine(){
   const t=iso(today()),list=bookings.filter(b=>(isAdmin||b.uid===me.uid)&&b.date>=t).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
   $("#mine").innerHTML=head(isAdmin?"Todos os agendamentos":"Meus agendamentos","Próximos horários reservados.")+`<div class="card">`+(list.length?list.map(b=>{const d=parse(b.date);
     return`<div class="row"><div class="date"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-BR",{month:"short"}).replace(".","")}</span></div><div class="g"><b>${esc(b.slot)} · ${esc(labName(b.lab))}</b><div class="mut">${d.toLocaleDateString("pt-BR",{weekday:"long"})} · Turma ${esc(b.turma)}${isAdmin?" · "+esc(b.name):""}</div></div><button class="btn danger sm" data-del="${esc(b.id)}">Cancelar</button></div>`}).join(""):'<div class="empty">Nenhum agendamento futuro.</div>')+"</div>";
-  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(await ask("Cancelar agendamento","O horário ficará livre para outros professores.","Cancelar agendamento",true))try{await deleteDoc(doc(db,"bookings",b.dataset.del));toast("Agendamento cancelado.")}catch{toast("Sem permissão para cancelar.","err")}});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(await ask("Cancelar agendamento","O horário ficará livre para outros usuários.","Cancelar agendamento",true))try{await deleteDoc(doc(db,"bookings",b.dataset.del));toast("Agendamento cancelado.")}catch{toast("Sem permissão para cancelar.","err")}});
 }
 
 /* ---------- Administração ---------- */
 function renderAdmin(){
-  const tabs=[["prof","Professores"],["labs","Espaços"],["hor","Horários"],["pra","Prazos"]];
-  $("#admin").innerHTML=head("Administração","Gerencie professores, espaços, horários e prazos.")+`<div class="tabs">${tabs.map(([k,l])=>`<button data-a="${k}" class="${asub===k?"on":""}">${l}</button>`).join("")}</div><div id="asub"></div>`;
+  const tabs=[["prof","Usuários"],["labs","Espaços"],["hor","Horários"],["pra","Prazos"]];
+  $("#admin").innerHTML=head("Administração","Gerencie usuários, espaços, horários e prazos.")+`<div class="tabs">${tabs.map(([k,l])=>`<button data-a="${k}" class="${asub===k?"on":""}">${l}</button>`).join("")}</div><div id="asub"></div>`;
   $("#admin").querySelectorAll("[data-a]").forEach(b=>b.onclick=()=>{if(asub!=="prof"&&dirty&&b.dataset.a==="prof"&&!confirm("Há alterações não salvas. Continuar?"))return;asub=b.dataset.a;renderAdmin()});
-  if(asub==="prof"){$("#asub").innerHTML=`<div class="card"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:6px"><div style="flex:1;min-width:200px"><h2>Professores</h2><p class="hint" style="margin:0">Só e-mails cadastrados conseguem entrar e agendar.</p></div><button class="btn pri" id="t_new">${ic("plus")} Novo professor</button></div>
+  if(asub==="prof"){$("#asub").innerHTML=`<div class="card"><div style="display:flex;gap:10px;flex-wrap:wrap;align-items:end;margin-bottom:6px"><div style="flex:1;min-width:200px"><h2>Usuários</h2><p class="hint" style="margin:0">Só e-mails cadastrados conseguem entrar e agendar.</p></div><button class="btn pri" id="t_new">${ic("plus")} Novo usuário</button></div>
     <div class="f" style="margin:14px 0"><input id="t_q" placeholder="Buscar por nome ou e-mail" value="${esc(tq)}"></div><div id="t_list"></div></div>`;
     $("#t_new").onclick=()=>openTeacher();$("#t_q").oninput=e=>{tq=e.target.value;drawTeachers()};drawTeachers();return}
   let h="";
   if(asub==="labs")W.labs.forEach(l=>{l.roles=l.roles||[...ALLR]});
-  if(asub==="labs")h=`<div class="card"><h2>Espaços</h2><p class="hint">Locais que os professores podem reservar: laboratórios, auditórios, salas…</p>${W.labs.map((l,i)=>`<div class="slotblk"><div class="slotrow"><div class="f" style="flex:1"><input data-lab="${i}" value="${esc(l.name)}" aria-label="Nome do espaço"></div><button class="btn danger sm" data-rl="${i}">${ic("trash",16)}</button></div><div class="mut" style="margin:2px 0 6px">Quem pode ver e reservar:</div><div class="wdays">${ALLR.map(r=>`<button type="button" class="wd ${l.roles.includes(r)?"on":""}" data-lr="${i},${r}" aria-pressed="${l.roles.includes(r)}">${ROLEN[r]}</button>`).join("")}</div></div>`).join("")}<button class="btn sec sm" id="c_al">${ic("plus",16)} Espaço</button></div>`;
+  if(asub==="labs")h=`<div class="card"><h2>Espaços</h2><p class="hint">Locais que os usuários podem reservar: laboratórios, auditórios, salas…</p>${W.labs.map((l,i)=>`<div class="slotblk"><div class="slotrow"><div class="f" style="flex:1"><input data-lab="${i}" value="${esc(l.name)}" aria-label="Nome do espaço"></div><button class="btn danger sm" data-rl="${i}">${ic("trash",16)}</button></div><div class="mut" style="margin:2px 0 6px">Quem pode ver e reservar:</div><div class="wdays">${ALLR.map(r=>`<button type="button" class="wd ${l.roles.includes(r)?"on":""}" data-lr="${i},${r}" aria-pressed="${l.roles.includes(r)}">${ROLEN[r]}</button>`).join("")}</div></div>`).join("")}<button class="btn sec sm" id="c_al">${ic("plus",16)} Espaço</button></div>`;
   if(asub==="hor")W.segments.forEach(s=>{s.sd=s.slots.map((_,j)=>s.sd?.[j]??[...DEFD])});
   if(asub==="hor")h=W.segments.map((s,i)=>`<div class="card"><div class="slotrow"><div class="f" style="flex:1"><label>Segmento</label><input data-sn="${i}" value="${esc(s.name)}"></div><button class="btn sec sm" data-cs="${i}" style="margin-top:22px" title="Clonar segmento" aria-label="Clonar segmento">${ic("copy",16)}</button><button class="btn danger sm" data-rs="${i}" style="margin-top:22px" aria-label="Excluir segmento">${ic("trash",16)}</button></div>
     <label class="mut" style="display:block;margin:6px 0">Horários (início, fim e dias da semana disponíveis)</label>${s.slots.map((x,j)=>{const[a,b]=x.split("-");return`<div class="slotblk"><div class="slotrow"><div class="f" style="flex:1"><input type="time" data-sa="${i},${j}" value="${a||""}"></div><span class="mut">até</span><div class="f" style="flex:1"><input type="time" data-sb="${i},${j}" value="${b||""}"></div><button class="icon" data-rx="${i},${j}" aria-label="Remover">${ic("x",16)}</button></div><div class="wdays" role="group" aria-label="Dias da semana">${[1,2,3,4,5,6,0].map(d=>`<button type="button" class="wd ${s.sd[j].includes(d)?"on":""}" data-wd="${i},${j},${d}" aria-pressed="${s.sd[j].includes(d)}" title="${WDN[d]}">${WDS[d]}</button>`).join("")}</div></div>`}).join("")}<button class="btn sec sm" data-ax="${i}">${ic("plus",16)} Horário</button></div>`).join("")+`<button class="btn sec" id="c_as">${ic("plus",16)} Segmento</button>`;
@@ -281,33 +281,33 @@ function renderAdmin(){
 }
 function drawTeachers(){
   const el=$("#t_list");if(!el)return;const q=tq.toLowerCase(),l=teachers.filter(t=>!q||(t.name||"").toLowerCase().includes(q)||t.id.includes(q));
-  el.innerHTML=l.length?l.map(t=>`<div class="row"><div class="av">${esc(initials(t.name))}</div><div class="g"><b>${esc(t.name)}</b> <span class="badge mu">${ROLEN[t.role||"prof"]}</span> <span class="badge ${t.active?"ok":"mu"}">${t.active?"Ativo":"Desativado"}</span><div class="mut">${esc(t.id)}</div></div><button class="btn sec sm" data-ed="${esc(t.id)}">Editar</button></div>`).join(""):`<div class="empty">${teachers.length?"Nenhum resultado.":"Nenhum professor cadastrado ainda."}</div>`;
+  el.innerHTML=l.length?l.map(t=>`<div class="row"><div class="av">${esc(initials(t.name))}</div><div class="g"><b>${esc(t.name)}</b> <span class="badge mu">${ROLEN[t.role||"prof"]}</span> <span class="badge ${t.active?"ok":"mu"}">${t.active?"Ativo":"Desativado"}</span><div class="mut">${esc(t.id)}</div></div><button class="btn sec sm" data-ed="${esc(t.id)}">Editar</button></div>`).join(""):`<div class="empty">${teachers.length?"Nenhum resultado.":"Nenhum usuário cadastrado ainda."}</div>`;
   el.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>openTeacher(teachers.find(t=>t.id===b.dataset.ed)));
 }
 const genPw=()=>{const c="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",a=new Uint32Array(10);crypto.getRandomValues(a);return[...a].map(n=>c[n%c.length]).join("")};
 function openTeacher(t){
   const edit=!!t;
-  modal({title:edit?"Editar professor":"Novo professor",
+  modal({title:edit?"Editar usuário":"Novo usuário",
     body:`<div class="f"><label>Nome</label><input id="tm_name" value="${esc(t?.name||"")}"></div><div class="f"><label>E-mail</label><input id="tm_email" type="email" value="${esc(t?.id||"")}"></div>
     <div class="f"><label>Perfil</label><select id="tm_role">${ALLR.map(r=>`<option value="${r}" ${(t?.role||"prof")===r?"selected":""}>${ROLEN[r]}</option>`).join("")}</select><div class="mut" style="margin-top:6px">Define quais espaços o usuário enxerga e pode reservar.</div></div>
     ${edit?`<div class="f"><label>Status</label><select id="tm_act"><option value="1" ${t.active?"selected":""}>Ativo</option><option value="0" ${t.active?"":"selected"}>Desativado (não consegue entrar)</option></select></div>`:""}
     <div class="f"><label>${edit?"Criar acesso com senha (obrigatória se mudar o e-mail)":"Senha de acesso"}</label><div class="dn"><input id="tm_pw" autocomplete="off" placeholder="Mínimo 6 caracteres"><button type="button" class="btn sec sm" id="tm_gen">Gerar</button></div>
     <div class="mut" style="margin-top:6px">Anote a senha: ela não pode ser consultada depois.</div></div>
-    ${edit?`<button type="button" class="lnk" id="tm_reset">Enviar link para o professor redefinir a senha</button>`:""}`,
+    ${edit?`<button type="button" class="lnk" id="tm_reset">Enviar link para o usuário redefinir a senha</button>`:""}`,
     onOpen:d=>{d.querySelector("#tm_gen").onclick=()=>d.querySelector("#tm_pw").value=genPw();const r=d.querySelector("#tm_reset");if(r)r.onclick=async()=>{try{await sendPasswordResetEmail(auth,t.id);toast("Link enviado para "+t.id)}catch(e){toast(errTxt(e),"err")}}},
-    actions:[...(edit?[{label:"Excluir",cls:"danger",left:true,value:"del",run:async d=>{if(!(await ask("Excluir professor",`${esc(t.name)} perderá o acesso ao sistema. Agendamentos já feitos continuam. A conta de login permanece no Firebase, mas sem acesso.`,"Excluir",true)))return false;
-        try{await deleteDoc(doc(db,"teachers",t.id));toast("Professor excluído.")}catch{toast("Sem permissão.","err");return false}}}]:[]),
+    actions:[...(edit?[{label:"Excluir",cls:"danger",left:true,value:"del",run:async d=>{if(!(await ask("Excluir usuário",`${esc(t.name)} perderá o acesso ao sistema. Agendamentos já feitos continuam. A conta de login permanece no Firebase, mas sem acesso.`,"Excluir",true)))return false;
+        try{await deleteDoc(doc(db,"teachers",t.id));toast("Usuário excluído.")}catch{toast("Sem permissão.","err");return false}}}]:[]),
       {label:"Cancelar"},{label:"Salvar",cls:"pri",run:async d=>{
         const g=i=>d.querySelector(i),name=g("#tm_name").value.trim(),email=g("#tm_email").value.trim().toLowerCase(),pw=g("#tm_pw").value,active=edit?g("#tm_act").value==="1":true,role=g("#tm_role").value;
         if(!name||!/^\S+@\S+\.\S+$/.test(email)){toast("Informe nome e e-mail válidos.","err");return false}
-        if((!edit||email!==t.id)&&!pw){toast("Defina uma senha para o professor.","err");return false}
+        if((!edit||email!==t.id)&&!pw){toast("Defina uma senha para o usuário.","err");return false}
         if(pw&&pw.length<6){toast("A senha precisa ter pelo menos 6 caracteres.","err");return false}
-        if((!edit||email!==t.id)&&teachers.some(x=>x.id===email)){toast("Já existe professor com esse e-mail.","err");return false}
+        if((!edit||email!==t.id)&&teachers.some(x=>x.id===email)){toast("Já existe usuário com esse e-mail.","err");return false}
         try{
           if(edit&&email===t.id)await updateDoc(doc(db,"teachers",email),{name,active,role});
           else{await setDoc(doc(db,"teachers",email),{name,email,active,role,created:t?.created||new Date().toISOString()});if(edit)await deleteDoc(doc(db,"teachers",t.id))}
         }catch{toast("Sem permissão para salvar.","err");return false}
-        if(pw){try{await createUserWithEmailAndPassword(secAuth,email,pw);await signOut(secAuth);toast("Professor salvo e senha criada.")}catch(e){toast(e.code==="auth/email-already-in-use"?"Salvo. Esse e-mail já tem senha: use o link de redefinição.":"Salvo, mas a senha falhou: "+errTxt(e),"err")}}
-        else toast("Professor salvo.")}}]});
+        if(pw){try{await createUserWithEmailAndPassword(secAuth,email,pw);await signOut(secAuth);toast("Usuário salvo e senha criada.")}catch(e){toast(e.code==="auth/email-already-in-use"?"Salvo. Esse e-mail já tem senha: use o link de redefinição.":"Salvo, mas a senha falhou: "+errTxt(e),"err")}}
+        else toast("Usuário salvo.")}}]});
 }
 </script></body></html>
