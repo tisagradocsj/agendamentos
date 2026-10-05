@@ -99,7 +99,7 @@ const DEF={school:"Minha Escola",minHours:2,maxDays:30,labs:[{id:"l1",name:"Espa
 const IC={calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>',set:'<path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/>',plus:'<path d="M12 5v14M5 12h14"/>',out:'<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>',key:'<circle cx="7.5" cy="15.5" r="4.5"/><path d="M10.7 12.3 21 2M16 7l3 3"/>',x:'<path d="M18 6 6 18M6 6l12 12"/>',copy:'<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14"/>'};
 const ic=(n,s=18)=>`<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${IC[n]}</svg>`;
 
-let cfg=DEF,hasCfg=false,bookings=[],teachers=[],me=null,myName="",isAdmin=false,tab="book",asub="prof",agLab="",agWeek="",agDay="",draft={},sel="",unsub=[],blocked="",W=null,dirty=false,tq="";
+let cfg=DEF,hasCfg=false,bookings=[],teachers=[],me=null,myName="",myRole="prof",isAdmin=false,tab="book",asub="prof",agLab="",agWeek="",agDay="",draft={},sel="",unsub=[],blocked="",W=null,dirty=false,tq="";
 const $=s=>document.querySelector(s),esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const iso=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)},addD=(d,n)=>{const x=new Date(d);x.setDate(x.getDate()+n);return x};
@@ -110,6 +110,8 @@ const sdays=(s,j)=>{const v=s.sd?.[j];return Array.isArray(v)?v:typeof v==="stri
 const minH=()=>cfg.minHours??(cfg.minDays!=null?cfg.minDays*24:2);
 const startOf=(date,slot)=>new Date(`${date}T${slot.split("-")[0]}:00`);
 const bid=(lab,date,slot)=>[lab,date,slot.split("-")[0]].join("_"),find=(l,d,s)=>bookings.find(b=>b.id===bid(l,d,s));
+const ROLEN={prof:"Professor",ped:"Pedagógico",adm:"Administrativo"},ALLR=["prof","ped","adm"];
+const visLabs=()=>isAdmin?cfg.labs:cfg.labs.filter(l=>(l.roles||ALLR).includes(myRole));
 const labName=id=>cfg.labs.find(l=>l.id===id)?.name||id,initials=n=>(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
 const mobile=()=>matchMedia("(max-width:760px)").matches;matchMedia("(max-width:760px)").onchange=()=>{if(me)render()};
 const errTxt=e=>({"auth/invalid-credential":"E-mail ou senha incorretos.","auth/wrong-password":"E-mail ou senha incorretos.","auth/user-not-found":"E-mail ou senha incorretos.","auth/invalid-email":"E-mail inválido.","auth/too-many-requests":"Muitas tentativas. Aguarde um pouco.","auth/weak-password":"Senha fraca (mínimo 6 caracteres).","auth/email-already-in-use":"Esse e-mail já tem conta de acesso.","auth/operation-not-allowed":"Login por e-mail/senha não está ativado no Firebase.","auth/popup-closed-by-user":"Login cancelado."}[e.code]||"Erro: "+(e.code||e.message));
@@ -143,9 +145,9 @@ onAuthStateChanged(auth,async u=>{
   try{isAdmin=(await getDoc(doc(db,"admins",email))).exists()}catch{}
   try{const s=await getDoc(doc(db,"teachers",email));if(s.exists())t=s.data()}catch{}
   if(!isAdmin&&!(t&&t.active)){blocked="Seu acesso não está liberado. Peça ao administrador para cadastrar o e-mail "+email+".";await signOut(auth);return}
-  me=u;myName=u.displayName||t?.name||"";blocked="";lmsg("");
+  me=u;myName=u.displayName||t?.name||"";myRole=t?.role||"prof";blocked="";lmsg("");
   $("#login").classList.add("hide");$("#app").classList.remove("hide");
-  $("#av").textContent=initials(myName||email);$("#um_n").textContent=myName||email;$("#um_e").textContent=email+(isAdmin?" · administrador":"");
+  $("#av").textContent=initials(myName||email);$("#um_n").textContent=myName||email;$("#um_e").textContent=email+(isAdmin?" · administrador":" · "+ROLEN[myRole]);
   $("#um_pw").classList.toggle("hide",!u.providerData.some(p=>p.providerId==="password"));
   unsub.push(onSnapshot(doc(db,"config","main"),s=>{hasCfg=s.exists();cfg=hasCfg?s.data():DEF;if(!dirty)resetW();$("#book").dataset.ready="";$("#school").textContent=cfg.school;$("#logo").textContent=initials(cfg.school)[0];if(tab!=="admin")render();else if(!dirty)render()}));
   unsub.push(onSnapshot(query(collection(db,"bookings"),where("startTs",">=",Timestamp.fromDate(today()))),q=>{bookings=q.docs.map(d=>({id:d.id,...d.data()}));if(tab!=="admin")render()}));
@@ -167,10 +169,11 @@ const head=(t,s)=>`<h1 class="pt">${t}</h1><p class="sub">${s}</p>`;
 function renderBook(){
   const el=$("#book");if(el.dataset.ready){drawChips();return}
   if(!hasCfg){el.innerHTML=head("Novo agendamento","")+`<div class="card empty">O administrador ainda não configurou espaços e horários.</div>`;return}
+  if(!visLabs().length){el.innerHTML=head("Novo agendamento","")+`<div class="card empty">Nenhum espaço disponível para o seu perfil.</div>`;return}
   const t=today(),mn=iso(t),mx=iso(addD(t,cfg.maxDays));
   el.innerHTML=head("Novo agendamento",`Antecedência mínima de ${minH()} h · até ${cfg.maxDays} dias à frente`)+`
   <div class="card"><h2>1. Onde e quando</h2><p class="hint">Escolha o espaço, o segmento e a data.</p>
-  <div class="grid"><div class="f"><label>Espaço</label><select id="f_lab">${cfg.labs.map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select></div>
+  <div class="grid"><div class="f"><label>Espaço</label><select id="f_lab">${visLabs().map(l=>`<option value="${esc(l.id)}">${esc(l.name)}</option>`).join("")}</select></div>
   <div class="f"><label>Segmento</label><select id="f_seg">${cfg.segments.map(s=>`<option value="${esc(s.id)}">${esc(s.name)}</option>`).join("")}</select></div>
   <div class="f"><label>Data</label><input type="date" id="f_date" min="${mn}" max="${mx}" value="${draft.date||""}"></div></div>
   <label style="display:block;font-size:13px;font-weight:500;margin:18px 0 8px">Horário</label><div id="chips" class="chips"></div></div>
@@ -205,9 +208,9 @@ async function submit(){
 /* ---------- Agenda ---------- */
 const monday=d=>addD(d,-((d.getDay()+6)%7));
 function renderAgenda(){
-  if(!agLab)agLab=cfg.labs[0]?.id||"";if(!agWeek)agWeek=iso(monday(today()));if(!agDay)agDay=iso(today());
+  if(!visLabs().some(l=>l.id===agLab))agLab=visLabs()[0]?.id||"";if(!agLab){$("#agenda").innerHTML=head("Agenda","")+`<div class="card empty">Nenhum espaço disponível para o seu perfil.</div>`;return}if(!agWeek)agWeek=iso(monday(today()));if(!agDay)agDay=iso(today());
   const minW=iso(monday(today())),minD=iso(today());if(agWeek<minW)agWeek=minW;if(agDay<minD)agDay=minD;
-  const labSel=`<div class="f"><label>Espaço</label><select id="a_lab">${cfg.labs.map(l=>`<option value="${esc(l.id)}" ${l.id===agLab?"selected":""}>${esc(l.name)}</option>`).join("")}</select></div>`;
+  const labSel=`<div class="f"><label>Espaço</label><select id="a_lab">${visLabs().map(l=>`<option value="${esc(l.id)}" ${l.id===agLab?"selected":""}>${esc(l.name)}</option>`).join("")}</select></div>`;
   let body;
   if(mobile()){
     body=`<div class="grid">${labSel}<div class="f"><label>Dia</label><div class="dn"><button class="btn sec sm" id="a_p" ${agDay<=minD?"disabled":""} aria-label="Dia anterior">◀</button><input type="date" id="a_d" value="${agDay}" min="${minD}"><button class="btn sec sm" id="a_n">▶</button></div></div></div>`+
@@ -242,7 +245,8 @@ function renderAdmin(){
     <div class="f" style="margin:14px 0"><input id="t_q" placeholder="Buscar por nome ou e-mail" value="${esc(tq)}"></div><div id="t_list"></div></div>`;
     $("#t_new").onclick=()=>openTeacher();$("#t_q").oninput=e=>{tq=e.target.value;drawTeachers()};drawTeachers();return}
   let h="";
-  if(asub==="labs")h=`<div class="card"><h2>Espaços</h2><p class="hint">Locais que os professores podem reservar: laboratórios, auditórios, salas…</p>${W.labs.map((l,i)=>`<div class="slotrow"><div class="f" style="flex:1"><input data-lab="${i}" value="${esc(l.name)}" aria-label="Nome do espaço"></div><button class="btn danger sm" data-rl="${i}">${ic("trash",16)}</button></div>`).join("")}<button class="btn sec sm" id="c_al">${ic("plus",16)} Espaço</button></div>`;
+  if(asub==="labs")W.labs.forEach(l=>{l.roles=l.roles||[...ALLR]});
+  if(asub==="labs")h=`<div class="card"><h2>Espaços</h2><p class="hint">Locais que os professores podem reservar: laboratórios, auditórios, salas…</p>${W.labs.map((l,i)=>`<div class="slotblk"><div class="slotrow"><div class="f" style="flex:1"><input data-lab="${i}" value="${esc(l.name)}" aria-label="Nome do espaço"></div><button class="btn danger sm" data-rl="${i}">${ic("trash",16)}</button></div><div class="mut" style="margin:2px 0 6px">Quem pode ver e reservar:</div><div class="wdays">${ALLR.map(r=>`<button type="button" class="wd ${l.roles.includes(r)?"on":""}" data-lr="${i},${r}" aria-pressed="${l.roles.includes(r)}">${ROLEN[r]}</button>`).join("")}</div></div>`).join("")}<button class="btn sec sm" id="c_al">${ic("plus",16)} Espaço</button></div>`;
   if(asub==="hor")W.segments.forEach(s=>{s.sd=s.slots.map((_,j)=>s.sd?.[j]??[...DEFD])});
   if(asub==="hor")h=W.segments.map((s,i)=>`<div class="card"><div class="slotrow"><div class="f" style="flex:1"><label>Segmento</label><input data-sn="${i}" value="${esc(s.name)}"></div><button class="btn sec sm" data-cs="${i}" style="margin-top:22px" title="Clonar segmento" aria-label="Clonar segmento">${ic("copy",16)}</button><button class="btn danger sm" data-rs="${i}" style="margin-top:22px" aria-label="Excluir segmento">${ic("trash",16)}</button></div>
     <label class="mut" style="display:block;margin:6px 0">Horários (início, fim e dias da semana disponíveis)</label>${s.slots.map((x,j)=>{const[a,b]=x.split("-");return`<div class="slotblk"><div class="slotrow"><div class="f" style="flex:1"><input type="time" data-sa="${i},${j}" value="${a||""}"></div><span class="mut">até</span><div class="f" style="flex:1"><input type="time" data-sb="${i},${j}" value="${b||""}"></div><button class="icon" data-rx="${i},${j}" aria-label="Remover">${ic("x",16)}</button></div><div class="wdays" role="group" aria-label="Dias da semana">${[1,2,3,4,5,6,0].map(d=>`<button type="button" class="wd ${s.sd[j].includes(d)?"on":""}" data-wd="${i},${j},${d}" aria-pressed="${s.sd[j].includes(d)}" title="${WDN[d]}">${WDS[d]}</button>`).join("")}</div></div>`}).join("")}<button class="btn sec sm" data-ax="${i}">${ic("plus",16)} Horário</button></div>`).join("")+`<button class="btn sec" id="c_as">${ic("plus",16)} Segmento</button>`;
@@ -250,14 +254,14 @@ function renderAdmin(){
     <div class="card" style="margin-top:14px"><h2>Limpeza de agendamentos</h2><p class="hint">Apaga do banco os agendamentos de datas que já passaram. Os agendamentos futuros não são afetados. Não dá para desfazer.</p><div class="grid"><div class="f"><label>Apagar agendamentos com mais de</label><select id="c_cl"><option value="0">Todos os já passados</option><option value="30">30 dias</option><option value="90">90 dias</option></select></div></div><div style="margin-top:14px"><button class="btn danger" id="c_clb">Apagar agendamentos antigos</button></div></div>`;
   $("#asub").innerHTML=h+`<div class="savebar"><span class="mut" id="c_st">${dirty?"Alterações não salvas":"Tudo salvo"}</span><div style="display:flex;gap:8px"><button class="btn sec" id="c_x" ${dirty?"":"disabled"}>Descartar</button><button class="btn pri" id="c_save" ${dirty?"":"disabled"}>Salvar alterações</button></div></div>`;
   const A=$("#asub"),mk=()=>{dirty=true;$("#c_st").textContent="Alterações não salvas";$("#c_save").disabled=$("#c_x").disabled=false},ij=v=>v.split(",").map(Number);
-  A.querySelectorAll("[data-lab]").forEach(x=>x.oninput=()=>{W.labs[x.dataset.lab].name=x.value;mk()});A.querySelectorAll("[data-rl]").forEach(x=>x.onclick=()=>{W.labs.splice(x.dataset.rl,1);dirty=true;renderAdmin()});
+  A.querySelectorAll("[data-lab]").forEach(x=>x.oninput=()=>{W.labs[x.dataset.lab].name=x.value;mk()});A.querySelectorAll("[data-rl]").forEach(x=>x.onclick=()=>{W.labs.splice(x.dataset.rl,1);dirty=true;renderAdmin()});A.querySelectorAll("[data-lr]").forEach(x=>x.onclick=()=>{const[i,r]=x.dataset.lr.split(","),a=W.labs[i].roles,n=a.includes(r)?a.filter(v=>v!==r):[...a,r];W.labs[i].roles=n;x.classList.toggle("on",n.includes(r));x.setAttribute("aria-pressed",n.includes(r));mk()});
   A.querySelectorAll("[data-sn]").forEach(x=>x.oninput=()=>{W.segments[x.dataset.sn].name=x.value;mk()});A.querySelectorAll("[data-rs]").forEach(x=>x.onclick=()=>{W.segments.splice(x.dataset.rs,1);dirty=true;renderAdmin()});A.querySelectorAll("[data-cs]").forEach(x=>x.onclick=()=>{const i=+x.dataset.cs,s=W.segments[i];W.segments.splice(i+1,0,{id:"s"+Date.now(),name:s.name+" (cópia)",slots:[...s.slots],sd:s.slots.map((_,j)=>[...sdays(s,j)])});dirty=true;renderAdmin();toast("Segmento clonado. Renomeie e salve as alterações.")});
   const upd=(k,x)=>{const[i,j]=ij(x.dataset[k]),p=W.segments[i].slots[j].split("-");p[k==="sa"?0:1]=x.value;W.segments[i].slots[j]=p.join("-");mk()};
   A.querySelectorAll("[data-sa]").forEach(x=>x.onchange=()=>upd("sa",x));A.querySelectorAll("[data-sb]").forEach(x=>x.onchange=()=>upd("sb",x));
   A.querySelectorAll("[data-rx]").forEach(x=>x.onclick=()=>{const[i,j]=ij(x.dataset.rx);W.segments[i].slots.splice(j,1);W.segments[i].sd.splice(j,1);dirty=true;renderAdmin()});
   A.querySelectorAll("[data-wd]").forEach(x=>x.onclick=()=>{const[i,j,d]=ij(x.dataset.wd),s=W.segments[i],a=s.sd[j],n=(a.includes(d)?a.filter(v=>v!==d):[...a,d]).sort();s.sd[j]=n;x.classList.toggle("on",n.includes(d));x.setAttribute("aria-pressed",n.includes(d));mk()});
   A.querySelectorAll("[data-ax]").forEach(x=>x.onclick=()=>{const g=W.segments[x.dataset.ax];g.slots.push("-");g.sd.push([...DEFD]);dirty=true;renderAdmin()});
-  if($("#c_al"))$("#c_al").onclick=()=>{W.labs.push({id:"l"+Date.now(),name:"Novo espaço"});dirty=true;renderAdmin()};
+  if($("#c_al"))$("#c_al").onclick=()=>{W.labs.push({id:"l"+Date.now(),name:"Novo espaço",roles:[...ALLR]});dirty=true;renderAdmin()};
   if($("#c_as"))$("#c_as").onclick=()=>{W.segments.push({id:"s"+Date.now(),name:"Novo segmento",slots:[],sd:[]});dirty=true;renderAdmin()};
   if($("#c_school")){$("#c_school").oninput=e=>{W.school=e.target.value;mk()};$("#c_min").oninput=e=>{W.minHours=Math.max(0,Math.round(+e.target.value||0));mk()};$("#c_max").oninput=e=>{W.maxDays=Math.max(1,Math.round(+e.target.value||1));mk()}}
   if($("#c_clb"))$("#c_clb").onclick=async()=>{const n=+$("#c_cl").value,cut=addD(today(),-n);
@@ -271,12 +275,13 @@ function renderAdmin(){
   $("#c_save").onclick=async()=>{
     for(const s of W.segments)for(const x of s.slots)if(!/^\d{2}:\d{2}-\d{2}:\d{2}$/.test(x)||x.split("-")[0]>=x.split("-")[1])return toast(`Horário incompleto ou inválido em "${s.name}".`,"err");
     for(const s of W.segments)for(let j=0;j<s.slots.length;j++)if(!sdays(s,j).length)return toast(`Selecione ao menos um dia da semana para o horário ${s.slots[j]} em "${s.name}".`,"err");
+    const nr=W.labs.find(l=>l.roles&&!l.roles.length);if(nr)return toast('Selecione ao menos um perfil para o espaço "'+nr.name+'".',"err");
     W.school=(W.school||"").trim()||"Escola";W.segments.forEach(s=>{const p=s.slots.map((x,j)=>[x,sdays(s,j)]).sort((a,b)=>a[0]<b[0]?-1:a[0]>b[0]?1:0);s.slots=p.map(x=>x[0]);s.sd=p.map(x=>x[1])});
-    try{const P=JSON.parse(JSON.stringify(W));P.segments.forEach(s=>{s.sd=s.slots.map((_,j)=>sdays(s,j).join(""))});await setDoc(doc(db,"config","main"),P);dirty=false;toast("Configurações salvas.");renderAdmin()}catch(e){console.error(e);toast(e.code==="permission-denied"?"Sem permissão para salvar.":"Não foi possível salvar: "+(e.message||e.code),"err")}};
+    try{const P=JSON.parse(JSON.stringify(W));P.labAccess=Object.fromEntries(P.labs.map(l=>[l.id,(l.roles&&l.roles.length?l.roles:ALLR).join(",")]));P.segments.forEach(s=>{s.sd=s.slots.map((_,j)=>sdays(s,j).join(""))});await setDoc(doc(db,"config","main"),P);dirty=false;toast("Configurações salvas.");renderAdmin()}catch(e){console.error(e);toast(e.code==="permission-denied"?"Sem permissão para salvar.":"Não foi possível salvar: "+(e.message||e.code),"err")}};
 }
 function drawTeachers(){
   const el=$("#t_list");if(!el)return;const q=tq.toLowerCase(),l=teachers.filter(t=>!q||(t.name||"").toLowerCase().includes(q)||t.id.includes(q));
-  el.innerHTML=l.length?l.map(t=>`<div class="row"><div class="av">${esc(initials(t.name))}</div><div class="g"><b>${esc(t.name)}</b> <span class="badge ${t.active?"ok":"mu"}">${t.active?"Ativo":"Desativado"}</span><div class="mut">${esc(t.id)}</div></div><button class="btn sec sm" data-ed="${esc(t.id)}">Editar</button></div>`).join(""):`<div class="empty">${teachers.length?"Nenhum resultado.":"Nenhum professor cadastrado ainda."}</div>`;
+  el.innerHTML=l.length?l.map(t=>`<div class="row"><div class="av">${esc(initials(t.name))}</div><div class="g"><b>${esc(t.name)}</b> <span class="badge mu">${ROLEN[t.role||"prof"]}</span> <span class="badge ${t.active?"ok":"mu"}">${t.active?"Ativo":"Desativado"}</span><div class="mut">${esc(t.id)}</div></div><button class="btn sec sm" data-ed="${esc(t.id)}">Editar</button></div>`).join(""):`<div class="empty">${teachers.length?"Nenhum resultado.":"Nenhum professor cadastrado ainda."}</div>`;
   el.querySelectorAll("[data-ed]").forEach(b=>b.onclick=()=>openTeacher(teachers.find(t=>t.id===b.dataset.ed)));
 }
 const genPw=()=>{const c="abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789",a=new Uint32Array(10);crypto.getRandomValues(a);return[...a].map(n=>c[n%c.length]).join("")};
@@ -284,6 +289,7 @@ function openTeacher(t){
   const edit=!!t;
   modal({title:edit?"Editar professor":"Novo professor",
     body:`<div class="f"><label>Nome</label><input id="tm_name" value="${esc(t?.name||"")}"></div><div class="f"><label>E-mail</label><input id="tm_email" type="email" value="${esc(t?.id||"")}"></div>
+    <div class="f"><label>Perfil</label><select id="tm_role">${ALLR.map(r=>`<option value="${r}" ${(t?.role||"prof")===r?"selected":""}>${ROLEN[r]}</option>`).join("")}</select><div class="mut" style="margin-top:6px">Define quais espaços o usuário enxerga e pode reservar.</div></div>
     ${edit?`<div class="f"><label>Status</label><select id="tm_act"><option value="1" ${t.active?"selected":""}>Ativo</option><option value="0" ${t.active?"":"selected"}>Desativado (não consegue entrar)</option></select></div>`:""}
     <div class="f"><label>${edit?"Criar acesso com senha (obrigatória se mudar o e-mail)":"Senha de acesso"}</label><div class="dn"><input id="tm_pw" autocomplete="off" placeholder="Mínimo 6 caracteres"><button type="button" class="btn sec sm" id="tm_gen">Gerar</button></div>
     <div class="mut" style="margin-top:6px">Anote a senha: ela não pode ser consultada depois.</div></div>
@@ -292,14 +298,14 @@ function openTeacher(t){
     actions:[...(edit?[{label:"Excluir",cls:"danger",left:true,value:"del",run:async d=>{if(!(await ask("Excluir professor",`${esc(t.name)} perderá o acesso ao sistema. Agendamentos já feitos continuam. A conta de login permanece no Firebase, mas sem acesso.`,"Excluir",true)))return false;
         try{await deleteDoc(doc(db,"teachers",t.id));toast("Professor excluído.")}catch{toast("Sem permissão.","err");return false}}}]:[]),
       {label:"Cancelar"},{label:"Salvar",cls:"pri",run:async d=>{
-        const g=i=>d.querySelector(i),name=g("#tm_name").value.trim(),email=g("#tm_email").value.trim().toLowerCase(),pw=g("#tm_pw").value,active=edit?g("#tm_act").value==="1":true;
+        const g=i=>d.querySelector(i),name=g("#tm_name").value.trim(),email=g("#tm_email").value.trim().toLowerCase(),pw=g("#tm_pw").value,active=edit?g("#tm_act").value==="1":true,role=g("#tm_role").value;
         if(!name||!/^\S+@\S+\.\S+$/.test(email)){toast("Informe nome e e-mail válidos.","err");return false}
         if((!edit||email!==t.id)&&!pw){toast("Defina uma senha para o professor.","err");return false}
         if(pw&&pw.length<6){toast("A senha precisa ter pelo menos 6 caracteres.","err");return false}
         if((!edit||email!==t.id)&&teachers.some(x=>x.id===email)){toast("Já existe professor com esse e-mail.","err");return false}
         try{
-          if(edit&&email===t.id)await updateDoc(doc(db,"teachers",email),{name,active});
-          else{await setDoc(doc(db,"teachers",email),{name,email,active,created:t?.created||new Date().toISOString()});if(edit)await deleteDoc(doc(db,"teachers",t.id))}
+          if(edit&&email===t.id)await updateDoc(doc(db,"teachers",email),{name,active,role});
+          else{await setDoc(doc(db,"teachers",email),{name,email,active,role,created:t?.created||new Date().toISOString()});if(edit)await deleteDoc(doc(db,"teachers",t.id))}
         }catch{toast("Sem permissão para salvar.","err");return false}
         if(pw){try{await createUserWithEmailAndPassword(secAuth,email,pw);await signOut(secAuth);toast("Professor salvo e senha criada.")}catch(e){toast(e.code==="auth/email-already-in-use"?"Salvo. Esse e-mail já tem senha: use o link de redefinição.":"Salvo, mas a senha falhou: "+errTxt(e),"err")}}
         else toast("Professor salvo.")}}]});
