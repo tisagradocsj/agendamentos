@@ -109,7 +109,13 @@ const WDS=["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],WDN=["domingo","segunda",
 const sdays=(s,j)=>{const v=s.sd?.[j];return Array.isArray(v)?v:typeof v==="string"?v.split("").filter(c=>c>="0"&&c<="6").map(Number):DEFD},okDay=(s,j,date)=>sdays(s,j).includes(parse(date).getDay());
 const minH=()=>cfg.minHours??(cfg.minDays!=null?cfg.minDays*24:2);
 const startOf=(date,slot)=>new Date(`${date}T${slot.split("-")[0]}:00`);
-const bid=(lab,date,slot)=>[lab,date,slot.split("-")[0]].join("_"),find=(l,d,s)=>bookings.find(b=>b.id===bid(l,d,s));
+const bid=(lab,date,slot)=>[lab,date,slot.split("-")[0]].join("_");
+/* Sobreposição de horários: "07:00-07:50" e "07:10-08:00" conflitam no mesmo espaço/dia, mesmo em segmentos diferentes */
+const mins=t=>{const[h,m]=t.split(":").map(Number);return h*60+m},rng=s=>s.split("-").map(mins),overlap=(x,y)=>{const[a,b]=rng(x),[c,d]=rng(y);return a<d&&c<b};
+const find=(l,d,s)=>bookings.find(b=>b.lab===l&&b.date===d&&b.slot&&overlap(b.slot,s));
+/* Chaves de trava: o próprio horário + todo horário cadastrado que se sobrepõe a ele (qualquer segmento) */
+const allSlots=()=>[...new Set(cfg.segments.flatMap(s=>s.slots))];
+const lockKeys=(lab,date,slot)=>[...new Set([slot,...allSlots().filter(x=>overlap(x,slot))])].map(x=>[lab,date,x].join("_"));
 const ROLEN={prof:"Professor",ped:"Pedagógico",adm:"Administrativo"},ALLR=["prof","ped","adm"];
 const visLabs=()=>isAdmin?cfg.labs:cfg.labs.filter(l=>(l.roles||ALLR).includes(myRole));
 const labName=id=>cfg.labs.find(l=>l.id===id)?.name||id,initials=n=>(n||"?").trim().split(/\s+/).slice(0,2).map(x=>x[0]).join("").toUpperCase();
@@ -189,7 +195,7 @@ function drawChips(){
   if(!seg?.slots.length){c.innerHTML='<div class="mut">Este segmento não tem horários cadastrados.</div>';return}
   const sl=seg.slots.filter((_,j)=>okDay(seg,j,date));if(!sl.length){c.innerHTML=`<div class="mut">Não há horários disponíveis neste dia da semana (${WDN[parse(date).getDay()]}).</div>`;return}
   c.innerHTML=sl.map(s=>{const busy=find(lab,date,s),soon=!busy&&startOf(date,s)-now<minH()*36e5,[a,b]=s.split("-");
-    return`<button class="chip ${sel===s?"on":""}" data-s="${esc(s)}" ${busy||soon?"disabled":""}><b>${esc(a)} – ${esc(b)}</b><small>${busy?"Ocupado":soon?"Prazo encerrado":"Disponível"}</small></button>`}).join("");
+    return`<button class="chip ${sel===s?"on":""}" data-s="${esc(s)}" ${busy||soon?"disabled":""}><b>${esc(a)} – ${esc(b)}</b><small>${busy?(busy.slot!==s?"Ocupado ("+esc(busy.slot)+")":"Ocupado"):soon?"Prazo encerrado":"Disponível"}</small></button>`}).join("");
   c.querySelectorAll(".chip").forEach(b=>b.onclick=()=>{sel=b.dataset.s;drawChips()});
 }
 async function submit(){
@@ -199,8 +205,12 @@ async function submit(){
   const sg=cfg.segments.find(x=>x.id===seg),jx=sg?sg.slots.indexOf(slot):-1;if(jx<0||!okDay(sg,jx,date))return toast("Este horário não está disponível neste dia da semana.","err");
   if(diff<minH()*36e5)return toast(`É preciso agendar com pelo menos ${minH()} hora(s) de antecedência.`,"err");
   if(diff>cfg.maxDays*864e5)return toast(`Só é possível agendar até ${cfg.maxDays} dias à frente.`,"err");
+  if(find(lab,date,slot)){drawChips();return toast("Este horário acabou de ser ocupado (ou conflita com outro agendamento).","err")}
   const b=$("#f_go");b.disabled=true;
-  try{await setDoc(doc(db,"bookings",bid(lab,date,slot)),{lab,seg,date,start:slot.split("-")[0],slot,name,turma,email,uid:me.uid,startTs:Timestamp.fromDate(st),created:new Date().toISOString()});
+  try{const id=bid(lab,date,slot),keys=lockKeys(lab,date,slot),w=writeBatch(db);
+    w.set(doc(db,"bookings",id),{lab,seg,date,start:slot.split("-")[0],slot,name,turma,email,uid:me.uid,startTs:Timestamp.fromDate(st),created:new Date().toISOString(),locks:keys});
+    keys.forEach(k=>w.set(doc(db,"locks",k),{b:id,uid:me.uid}));
+    await w.commit();
     toast("Agendamento confirmado!");sel="";draft.turma="";$("#f_turma").value="";drawChips()}
   catch(e){toast(e.code==="permission-denied"?"Horário já ocupado, fora do prazo ou acesso não liberado.":"Erro: "+e.message,"err")}b.disabled=false;
 }
@@ -233,7 +243,7 @@ function renderMine(){
   const t=iso(today()),list=bookings.filter(b=>(isAdmin||b.uid===me.uid)&&b.date>=t).sort((a,b)=>(a.date+a.start).localeCompare(b.date+b.start));
   $("#mine").innerHTML=head(isAdmin?"Todos os agendamentos":"Meus agendamentos","Próximos horários reservados.")+`<div class="card">`+(list.length?list.map(b=>{const d=parse(b.date);
     return`<div class="row"><div class="date"><b>${d.getDate()}</b><span>${d.toLocaleDateString("pt-BR",{month:"short"}).replace(".","")}</span></div><div class="g"><b>${esc(b.slot)} · ${esc(labName(b.lab))}</b><div class="mut">${d.toLocaleDateString("pt-BR",{weekday:"long"})} · Turma ${esc(b.turma)}${isAdmin?" · "+esc(b.name):""}</div></div><button class="btn danger sm" data-del="${esc(b.id)}">Cancelar</button></div>`}).join(""):'<div class="empty">Nenhum agendamento futuro.</div>')+"</div>";
-  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(await ask("Cancelar agendamento","O horário ficará livre para outros usuários.","Cancelar agendamento",true))try{await deleteDoc(doc(db,"bookings",b.dataset.del));toast("Agendamento cancelado.")}catch{toast("Sem permissão para cancelar.","err")}});
+  document.querySelectorAll("[data-del]").forEach(b=>b.onclick=async()=>{if(await ask("Cancelar agendamento","O horário ficará livre para outros usuários.","Cancelar agendamento",true))try{const bk=bookings.find(x=>x.id===b.dataset.del),w=writeBatch(db);w.delete(doc(db,"bookings",b.dataset.del));(bk?.locks||[]).forEach(k=>w.delete(doc(db,"locks",k)));await w.commit();toast("Agendamento cancelado.")}catch{toast("Sem permissão para cancelar.","err")}});
 }
 
 /* ---------- Administração ---------- */
@@ -269,7 +279,7 @@ function renderAdmin(){
     const b=$("#c_clb");b.disabled=true;
     try{const q=await getDocs(query(collection(db,"bookings"),where("startTs","<",Timestamp.fromDate(cut))));
       if(!q.size)toast("Nenhum agendamento antigo encontrado.");
-      else{for(let i=0;i<q.docs.length;i+=400){const w=writeBatch(db);q.docs.slice(i,i+400).forEach(d=>w.delete(d.ref));await w.commit()}toast(`${q.size} agendamento(s) apagado(s).`)}}
+      else{for(let i=0;i<q.docs.length;i+=100){const w=writeBatch(db);q.docs.slice(i,i+100).forEach(d=>{w.delete(d.ref);(d.data().locks||[]).forEach(k=>w.delete(doc(db,"locks",k)))});await w.commit()}toast(`${q.size} agendamento(s) apagado(s).`)}}
     catch(e){toast("Erro ao apagar: "+e.message,"err")}b.disabled=false};
   $("#c_x").onclick=()=>{resetW();renderAdmin()};
   $("#c_save").onclick=async()=>{
